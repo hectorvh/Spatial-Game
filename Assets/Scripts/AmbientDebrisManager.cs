@@ -25,13 +25,16 @@ public class AmbientDebrisManager : MonoBehaviour
     public float recycleZ = -20f;
 
     [Header("Motion")]
-    public Vector2 forwardSpeedRange = new Vector2(18f, 37.5f);
+    [Tooltip("Each asteroid draws two speeds from this range. The higher one is used far away, the lower one as it reaches the bunny, blended in a straight line.")]
+    public Vector2 forwardSpeedRange = new Vector2(18f, 70f);
     [Tooltip("Lateral drift is always away from the corridor.")]
     public float maxLateralDrift = 2f;
     public float maxVerticalDrift = 0.5f;
     public Vector2 spinSpeedRange = new Vector2(20f, 90f);
     [Tooltip("Seconds between each asteroid placed when the run starts.")]
     public float initialPlaceInterval = 3.0f;
+    [Tooltip("How long an asteroid takes to fade in after it appears ahead.")]
+    public float fadeInSeconds = 2f;
 
     static readonly Color RockColor = new Color(0.36f, 0.33f, 0.31f, 1f);
     static readonly Color HullColor = new Color(0.55f, 0.58f, 0.62f, 1f);
@@ -137,8 +140,10 @@ public class AmbientDebrisManager : MonoBehaviour
             }
 
             Transform itemTransform = item.transform;
+            ApplyApproachSpeed(item);
             itemTransform.position += item.velocity * dt;
             itemTransform.Rotate(item.spinAxis, item.spinSpeed * dt, Space.World);
+            UpdateFade(item, dt);
 
             if (itemTransform.position.z < recycleZ)
             {
@@ -169,10 +174,12 @@ public class AmbientDebrisManager : MonoBehaviour
 
         item.transform.position = new Vector3(x, y, z);
         item.transform.rotation = Random.rotationUniform;
+        AssignSpeedCurve(item);
         item.velocity = new Vector3(
             side * Random.Range(0f, maxLateralDrift),
             Random.Range(-maxVerticalDrift, maxVerticalDrift),
-            -PickDistinctForwardSpeed(item));
+            0f);
+        ApplyApproachSpeed(item);
         item.spinAxis = Random.onUnitSphere;
         item.spinSpeed = item.kind == AmbientDebrisKind.StarCluster
             ? Random.Range(5f, 15f)
@@ -180,50 +187,215 @@ public class AmbientDebrisManager : MonoBehaviour
 
         spawnCount++;
         item.elementId = item.kind + "_" + spawnCount;
+        BeginFade(item);
     }
 
-    // Random inside forwardSpeedRange, but far enough from every other asteroid
-    // that no two share the same approach speed.
-    float PickDistinctForwardSpeed(AmbientDebrisItem self)
+    void BeginFade(AmbientDebrisItem item)
+    {
+        if (item.renderers == null || item.renderers.Length == 0)
+        {
+            item.renderers = item.GetComponentsInChildren<Renderer>(true);
+        }
+
+        item.fadeIn = 0f;
+        item.fading = true;
+        ForEachMaterial(item, delegate (Material material)
+        {
+            SetTransparent(material);
+            SetAlpha(material, 0f);
+        });
+    }
+
+    void UpdateFade(AmbientDebrisItem item, float dt)
+    {
+        if (!item.fading)
+        {
+            return;
+        }
+
+        item.fadeIn += dt / Mathf.Max(0.05f, fadeInSeconds);
+        float alpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(item.fadeIn));
+        bool finished = item.fadeIn >= 1f;
+        ForEachMaterial(item, delegate (Material material)
+        {
+            SetAlpha(material, finished ? 1f : alpha);
+            if (finished)
+            {
+                SetOpaque(material);
+            }
+        });
+
+        if (finished)
+        {
+            item.fading = false;
+        }
+    }
+
+    static void ForEachMaterial(AmbientDebrisItem item, System.Action<Material> action)
+    {
+        Renderer[] renderers = item.renderers;
+        if (renderers == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Material[] materials = renderer.materials;
+            for (int m = 0; m < materials.Length; m++)
+            {
+                if (materials[m] != null)
+                {
+                    action(materials[m]);
+                }
+            }
+        }
+    }
+
+    static void SetAlpha(Material material, float alpha)
+    {
+        if (material.HasColor("_BaseColor"))
+        {
+            Color color = material.GetColor("_BaseColor");
+            color.a = alpha;
+            material.SetColor("_BaseColor", color);
+        }
+
+        if (material.HasColor("_Color"))
+        {
+            Color color = material.GetColor("_Color");
+            color.a = alpha;
+            material.SetColor("_Color", color);
+        }
+    }
+
+    static void SetTransparent(Material material)
+    {
+        if (material.HasFloat("_Surface"))
+        {
+            material.SetFloat("_Surface", 1f);
+        }
+
+        if (material.HasFloat("_Blend"))
+        {
+            material.SetFloat("_Blend", 0f);
+        }
+
+        if (material.HasFloat("_ZWrite"))
+        {
+            material.SetFloat("_ZWrite", 0f);
+        }
+
+        if (material.HasFloat("_SrcBlend"))
+        {
+            material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+        }
+
+        if (material.HasFloat("_DstBlend"))
+        {
+            material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+        }
+
+        material.SetOverrideTag("RenderType", "Transparent");
+        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+    }
+
+    static void SetOpaque(Material material)
+    {
+        SetAlpha(material, 1f);
+        if (material.HasFloat("_Surface"))
+        {
+            material.SetFloat("_Surface", 0f);
+        }
+
+        if (material.HasFloat("_ZWrite"))
+        {
+            material.SetFloat("_ZWrite", 1f);
+        }
+
+        if (material.HasFloat("_SrcBlend"))
+        {
+            material.SetFloat("_SrcBlend", (float)BlendMode.One);
+        }
+
+        if (material.HasFloat("_DstBlend"))
+        {
+            material.SetFloat("_DstBlend", (float)BlendMode.Zero);
+        }
+
+        material.SetOverrideTag("RenderType", "Opaque");
+        material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+    }
+
+    // Far end of the spawn band is full speed. Speed falls in a straight line to the
+    // asteroid's own minimum as it reaches the bunny at z = 0.
+    void ApplyApproachSpeed(AmbientDebrisItem item)
+    {
+        float farZ = Mathf.Max(spawnZRange.x, spawnZRange.y);
+        float along = Mathf.InverseLerp(farZ, 0f, item.transform.position.z);
+        float speed = Mathf.Lerp(item.maxForwardSpeed, item.minForwardSpeed, along);
+        item.velocity.z = -Mathf.Max(0f, speed);
+    }
+
+    void AssignSpeedCurve(AmbientDebrisItem item)
     {
         float slow = Mathf.Min(forwardSpeedRange.x, forwardSpeedRange.y);
         float fast = Mathf.Max(forwardSpeedRange.x, forwardSpeedRange.y);
-        int slots = Mathf.Max(pool.Count, 1);
-        float minGap = (fast - slow) / slots;
-        if (minGap < 0.01f)
-        {
-            return Random.Range(slow, fast);
-        }
+        float span = Mathf.Max(0.01f, fast - slow);
+        float gap = span / Mathf.Max(pool.Count, 1);
 
-        for (int attempt = 0; attempt < 32; attempt++)
+        for (int attempt = 0; attempt < 40; attempt++)
         {
-            float speed = Random.Range(slow, fast);
-            if (IsSeparatedFromOthers(self, speed, minGap))
+            float a = Random.Range(slow, fast);
+            float b = Random.Range(slow, fast);
+            float minSpeed = Mathf.Min(a, b);
+            float maxSpeed = Mathf.Max(a, b);
+            if (maxSpeed - minSpeed < gap * 0.5f)
             {
-                return speed;
+                continue;
+            }
+
+            if (CurveIsSeparated(item, minSpeed, maxSpeed, gap))
+            {
+                item.minForwardSpeed = minSpeed;
+                item.maxForwardSpeed = maxSpeed;
+                return;
             }
         }
 
-        return FarthestForwardSpeed(self, slow, fast);
+        item.maxForwardSpeed = FarthestUnusedSpeed(item, slow, fast, true);
+        float minCeiling = Mathf.Max(slow, item.maxForwardSpeed - gap * 0.5f);
+        item.minForwardSpeed = FarthestUnusedSpeed(item, slow, minCeiling, false);
+        if (item.minForwardSpeed > item.maxForwardSpeed)
+        {
+            float swap = item.minForwardSpeed;
+            item.minForwardSpeed = item.maxForwardSpeed;
+            item.maxForwardSpeed = swap;
+        }
     }
 
-    bool IsSeparatedFromOthers(AmbientDebrisItem self, float speed, float minGap)
+    bool CurveIsSeparated(AmbientDebrisItem self, float minSpeed, float maxSpeed, float gap)
     {
         for (int i = 0; i < pool.Count; i++)
         {
             AmbientDebrisItem other = pool[i];
-            if (other == null || other == self)
+            if (other == null || other == self || other.maxForwardSpeed < 0f)
             {
                 continue;
             }
 
-            float otherSpeed = Mathf.Abs(other.velocity.z);
-            if (otherSpeed < 0.01f)
-            {
-                continue;
-            }
-
-            if (Mathf.Abs(otherSpeed - speed) < minGap)
+            if (Mathf.Abs(other.maxForwardSpeed - maxSpeed) < gap
+                || Mathf.Abs(other.minForwardSpeed - minSpeed) < gap)
             {
                 return false;
             }
@@ -232,31 +404,32 @@ public class AmbientDebrisManager : MonoBehaviour
         return true;
     }
 
-    float FarthestForwardSpeed(AmbientDebrisItem self, float slow, float fast)
+    float FarthestUnusedSpeed(AmbientDebrisItem self, float slow, float fast, bool useMax)
     {
+        if (fast < slow)
+        {
+            float swap = slow;
+            slow = fast;
+            fast = swap;
+        }
+
         float[] used = new float[pool.Count];
         int usedCount = 0;
         for (int i = 0; i < pool.Count; i++)
         {
             AmbientDebrisItem other = pool[i];
-            if (other == null || other == self)
+            if (other == null || other == self || other.maxForwardSpeed < 0f)
             {
                 continue;
             }
 
-            float otherSpeed = Mathf.Abs(other.velocity.z);
-            if (otherSpeed < 0.01f)
-            {
-                continue;
-            }
-
-            used[usedCount] = otherSpeed;
+            used[usedCount] = useMax ? other.maxForwardSpeed : other.minForwardSpeed;
             usedCount++;
         }
 
-        if (usedCount == 0)
+        if (usedCount == 0 || fast - slow < 0.01f)
         {
-            return Random.Range(slow, fast);
+            return Random.Range(slow, Mathf.Max(slow, fast));
         }
 
         System.Array.Sort(used, 0, usedCount);
@@ -265,10 +438,10 @@ public class AmbientDebrisManager : MonoBehaviour
 
         for (int i = 0; i < usedCount - 1; i++)
         {
-            float gap = (used[i + 1] - used[i]) * 0.5f;
-            if (gap > bestGap)
+            float opening = (used[i + 1] - used[i]) * 0.5f;
+            if (opening > bestGap)
             {
-                bestGap = gap;
+                bestGap = opening;
                 best = (used[i] + used[i + 1]) * 0.5f;
             }
         }

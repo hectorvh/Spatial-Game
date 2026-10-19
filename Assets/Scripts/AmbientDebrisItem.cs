@@ -19,4 +19,9 @@ public class AmbientDebrisItem : MonoBehaviour
     public Vector3 velocity;
     public Vector3 spinAxis = Vector3.up;
     public float spinSpeed;
+    public float minForwardSpeed = -1f;
+    public float maxForwardSpeed = -1f;
+    public float fadeIn;
+    public bool fading;
+    public Renderer[] renderers;
 }
