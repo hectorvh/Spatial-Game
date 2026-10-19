@@ -1,0 +1,52 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "What is the closest planet to the Sun?",
+      "answers": ["Venus", "Mercury", "Mars"],
+      "correctIndex": 1,
+      "category": "Solar System",
+      "difficulty": 1
+    },
+    {
+      "id": 2,
+      "question": "Which planet is known as the Red Planet?",
+      "answers": ["Jupiter", "Mars", "Saturn"],
+      "correctIndex": 1,
+      "category": "Solar System",
+      "difficulty": 1
+    },
+    {
+      "id": 3,
+      "question": "How many planets are in the Solar System?",
+      "answers": ["7", "8", "9"],
+      "correctIndex": 1,
+      "category": "Solar System",
+      "difficulty": 1
+    },
+    {
+      "id": 4,
+      "question": "What is the largest planet in the Solar System?",
+      "answers": ["Saturn", "Neptune", "Jupiter"],
+      "correctIndex": 2,
+      "category": "Solar System",
+      "difficulty": 1
+    },
+    {
+      "id": 5,
+      "question": "Which planet has the most prominent rings?",
+      "answers": ["Saturn", "Uranus", "Jupiter"],
+      "correctIndex": 0,
+      "category": "Solar System",
+      "difficulty": 1
+    },
+    {
+      "id": 6,
+      "question": "What is Earth's natural satellite called?",
+      "answers": ["Titan", "The Moon", "Europa"],
+      "correctIndex": 1,
+      "category": "Solar System",
+      "difficulty": 1
+    }
+  ]
+}

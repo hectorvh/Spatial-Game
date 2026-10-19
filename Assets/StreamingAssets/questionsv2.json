@@ -1,0 +1,103 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Where is the red sphere located relative to the box?",
+      "answers": ["Inside", "Under", "Behind"],
+      "correctIndex": 0,
+      "category": "Topological (Containment)",
+      "difficulty": 1,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "sphereScale": {"x": 0.6, "y": 0.6, "z": 0.6},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5}
+      }
+    },
+    {
+      "id": 2,
+      "question": "Where is the red sphere resting?",
+      "answers": ["Beside", "On top", "Inside"],
+      "correctIndex": 1,
+      "category": "Topological (Support)",
+      "difficulty": 1,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": 0.0, "y": 1.45, "z": 0.0},
+        "sphereScale": {"x": 0.6, "y": 0.6, "z": 0.6},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5}
+      }
+    },
+    {
+      "id": 3,
+      "question": "Where is the red sphere situated relative to the box?",
+      "answers": ["Behind", "In front of", "Inside"],
+      "correctIndex": 1,
+      "category": "Projective (Sagittal Axis)",
+      "difficulty": 2,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": 0.0, "y": 0.0, "z": -1.4},
+        "sphereScale": {"x": 0.6, "y": 0.6, "z": 0.6},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5}
+      }
+    },
+    {
+      "id": 4,
+      "question": "On which side of the box is the red sphere located?",
+      "answers": ["Behind", "To the right", "To the left"],
+      "correctIndex": 2,
+      "category": "Projective (Lateral Axis)",
+      "difficulty": 3,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": -1.8, "y": -0.5, "z": 0.0},
+        "sphereScale": {"x": 0.6, "y": 0.6, "z": 0.6},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5}
+      }
+    },
+    {
+      "id": 5,
+      "question": "How is the sphere positioned relative to the box?",
+      "answers": ["Far away", "Near", "Behind"],
+      "correctIndex": 1,
+      "category": "Distance Relations",
+      "difficulty": 1,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": 1.15, "y": 0.1, "z": 0.25},
+        "sphereScale": {"x": 0.6, "y": 0.6, "z": 0.6},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5}
+      }
+    },
+    {
+      "id": 6,
+      "question": "Which path did the red sphere describe relative to the container?",
+      "answers": ["Around the box", "Through the box", "Over the box"],
+      "correctIndex": 0,
+      "category": "Path Motion",
+      "difficulty": 2,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "sphereScale": {"x": 0.6, "y": 0.6, "z": 0.6},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5},
+        "isDynamic": true,
+        "motionType": "OrbitHorizontal",
+        "speed": 2.5,
+        "amplitude": {"x": 2.2, "y": 0.0, "z": 1.4}
+      }
+    },
+    {
+      "id": 7,
+      "question": "How did the red sphere travel relative to the container?",
+      "answers": ["Through the box", "Around the box", "Under the box"],
+      "correctIndex": 0,
+      "category": "Path Motion",
+      "difficulty": 2,
+      "spatialConfig": {
+        "sphereLocalPosition": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "sphereScale": {"x": 0.55, "y": 0.55, "z": 0.55},
+        "boxDimensions": {"width": 2.0, "height": 2.2, "depth": 1.5},
+        "isDynamic": true,
+        "motionType": "TraverseThrough",
+        "speed": 2.0,
+        "amplitude": {"x": 0.0, "y": 0.0, "z": 2.4}
+      }
+    }
+  ]
+}
