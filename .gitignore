@@ -23,3 +23,5 @@
 *.app
 crashlytics-buildid.txt
 sysinfo.txt
+/Data/Plugins/lib_burst_generated*
+/GeneratedAssets/
