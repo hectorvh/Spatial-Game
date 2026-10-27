@@ -4,7 +4,7 @@ using UnityEngine;
 /// Clip assignments for <see cref="AudioManager"/>. The shipped instance lives at
 /// Assets/Resources/AudioLibrary.asset so only the referenced clips go into builds.
 /// </summary>
-[CreateAssetMenu(fileName = "AudioLibrary", menuName = "Spatial Paws/Audio Library")]
+[CreateAssetMenu(fileName = "AudioLibrary", menuName = "Astro Bunny/Audio Library")]
 public class AudioLibrary : ScriptableObject
 {
     [Header("SFX")]
@@ -18,6 +18,8 @@ public class AudioLibrary : ScriptableObject
     [Header("Music")]
     [Tooltip("Level 1 BGM. Leave empty to use the generated synth loop.")]
     public AudioClip levelMusic;
+    [Tooltip("Level select and level clear. Leave empty to play the level music quietly.")]
+    public AudioClip menuMusic;
     public bool useProceduralMusicFallback = true;
 
     [Header("Mix")]
@@ -27,4 +29,6 @@ public class AudioLibrary : ScriptableObject
     [Range(0f, 1f)] public float pausedMusicScale = 0.35f;
     [Tooltip("Music level on the FINISHED screen, as a fraction of musicVolume.")]
     [Range(0f, 1f)] public float finishedMusicScale = 0.4f;
+    [Tooltip("Level-music level on the carousel when menuMusic is empty.")]
+    [Range(0f, 1f)] public float menuMusicScale = 0.45f;
 }

@@ -345,17 +345,27 @@ public class GameHUD : MonoBehaviour
 
     public void ShowFinish()
     {
-        if (finishPanel == null)
+        ShowFinish(true);
+    }
+
+    /// <param name="showPanel">False when LevelFlowController shows its level-clear screen instead.</param>
+    public void ShowFinish(bool showPanel)
+    {
+        if (showPanel)
         {
-            BuildFinishPanel();
+            if (finishPanel == null)
+            {
+                BuildFinishPanel();
+            }
+
+            if (finishScoreLabel != null)
+            {
+                finishScoreLabel.text = score.ToString("000");
+            }
+
+            finishPanel.gameObject.SetActive(true);
         }
 
-        if (finishScoreLabel != null)
-        {
-            finishScoreLabel.text = score.ToString("000");
-        }
-
-        finishPanel.gameObject.SetActive(true);
         ClearTrialBanner();
         SetPaused(false);
         if (pauseButton != null)
@@ -610,7 +620,10 @@ public class GameHUD : MonoBehaviour
 
     void OnExitClicked()
     {
-        // Placeholder: quit / return to menu will be wired later.
+        if (LevelFlowController.Instance != null && LevelFlowController.Instance.showLevelSelect)
+        {
+            LevelFlowController.ReturnToLevelMap();
+        }
     }
 
     void BuildQuestionPanel()

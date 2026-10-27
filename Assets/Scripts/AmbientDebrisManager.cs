@@ -67,6 +67,8 @@ public class AmbientDebrisManager : MonoBehaviour
     int spawnCount;
     int nextToPlace;
     float placeTimer;
+    bool retiring;
+    float retireSeconds = 1.5f;
 
     public static AmbientDebrisManager Ensure()
     {
@@ -121,7 +123,7 @@ public class AmbientDebrisManager : MonoBehaviour
             return;
         }
 
-        if (nextToPlace < pool.Count)
+        if (!retiring && nextToPlace < pool.Count)
         {
             placeTimer += dt;
             if (placeTimer >= initialPlaceInterval)
@@ -144,17 +146,73 @@ public class AmbientDebrisManager : MonoBehaviour
             itemTransform.position += item.velocity * dt;
             itemTransform.Rotate(item.spinAxis, item.spinSpeed * dt, Space.World);
             UpdateFade(item, dt);
+            if (UpdateFadeOut(item, dt))
+            {
+                continue;
+            }
 
             if (itemTransform.position.z < recycleZ)
             {
-                Respawn(item, Random.Range(spawnZRange.x, spawnZRange.y));
+                if (retiring)
+                {
+                    item.gameObject.SetActive(false);
+                }
+                else
+                {
+                    Respawn(item, Random.Range(spawnZRange.x, spawnZRange.y));
+                }
             }
         }
     }
 
+    /// <summary>Corridor finish: fade the live asteroids out and stop placing or recycling them.</summary>
+    public void Retire(float fadeSeconds)
+    {
+        retiring = true;
+        retireSeconds = Mathf.Max(0.05f, fadeSeconds);
+        for (int i = 0; i < pool.Count; i++)
+        {
+            AmbientDebrisItem item = pool[i];
+            if (!item.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            float startAlpha = item.fading ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(item.fadeIn)) : 1f;
+            item.fading = false;
+            item.fadingOut = true;
+            item.fadeOut = 1f - startAlpha;
+            ForEachMaterial(item, SetTransparent);
+        }
+    }
+
+    bool UpdateFadeOut(AmbientDebrisItem item, float dt)
+    {
+        if (!item.fadingOut)
+        {
+            return false;
+        }
+
+        item.fadeOut += dt / retireSeconds;
+        float alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(item.fadeOut));
+        ForEachMaterial(item, delegate (Material material)
+        {
+            SetAlpha(material, alpha);
+        });
+
+        if (item.fadeOut < 1f)
+        {
+            return false;
+        }
+
+        item.fadingOut = false;
+        item.gameObject.SetActive(false);
+        return true;
+    }
+
     void PlaceNextAsteroid()
     {
-        if (nextToPlace >= pool.Count)
+        if (retiring || nextToPlace >= pool.Count)
         {
             return;
         }

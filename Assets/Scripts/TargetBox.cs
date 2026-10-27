@@ -74,6 +74,7 @@ public class TargetBox : MonoBehaviour
             }
 
             PlaySessionLogger.Ensure().LogShotCorrect(CurrentLane(), questionId, questionText, answerText);
+            RunStats.RecordCorrect(questionId);
             AudioManager.PlayCorrectHit();
 
             Vector3 visiblePosition = CurvedWorld.Bend(transform.position);
@@ -96,6 +97,7 @@ public class TargetBox : MonoBehaviour
         else
         {
             PlaySessionLogger.Ensure().LogShotIncorrect(CurrentLane(), questionId, questionText, answerText);
+            RunStats.RecordWrongShot();
             AudioManager.PlayWrongShot();
             Debug.Log("Incorrect box: " + answerText);
         }

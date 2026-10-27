@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class PlayerControllerX : MonoBehaviour
@@ -15,6 +17,10 @@ public class PlayerControllerX : MonoBehaviour
     public float laneChangeSpeed = 22.0f; 
 
     public bool isGameOver = false;
+
+    /// <summary>Hangar approach: steering and shooting are off and the bunny holds the center rail.</summary>
+    public bool ControlLocked { get; private set; }
+    bool scriptedMotion;
 
     [Header("Damage Settings")]
     public float invulnerabilityDuration = 1.5f;
@@ -51,7 +57,11 @@ public class PlayerControllerX : MonoBehaviour
     private InputAction moveRightAction;
     private InputAction shootAction;
 
-    float startY; 
+    float startY;
+    bool touchTracking;
+    bool touchDraggedLane;
+    Vector2 touchOrigin;
+    readonly List<RaycastResult> uiHits = new List<RaycastResult>(); 
 
     void Awake()
     {
@@ -92,6 +102,7 @@ public class PlayerControllerX : MonoBehaviour
         AudioManager.Ensure();
         AmbientDebrisManager.Ensure();
         CurvedWorldController.Ensure();
+        LevelFlowController.Ensure();
 
         // Left Rail Action 
         moveLeftAction = new InputAction("MoveLeft");
@@ -126,20 +137,30 @@ public class PlayerControllerX : MonoBehaviour
                 return;
             }
 
-            // Change lane
-            if (moveLeftAction.triggered && currentLane > 0)
+            if (scriptedMotion)
             {
-                int fromLane = currentLane;
-                currentLane--;
-                PlaySessionLogger.Ensure().LogLaneChange(fromLane, currentLane);
-                AudioManager.PlayLaneShift();
+                return;
             }
-            else if (moveRightAction.triggered && currentLane < railsX.Length - 1)
+
+            bool acceptInput = !ControlLocked && LevelFlowController.InputEnabled;
+
+            if (acceptInput)
             {
-                int fromLane = currentLane;
-                currentLane++;
-                PlaySessionLogger.Ensure().LogLaneChange(fromLane, currentLane);
-                AudioManager.PlayLaneShift();
+                HandleGameplayTouch();
+            }
+            else
+            {
+                touchTracking = false;
+            }
+
+            // Change lane
+            if (acceptInput && moveLeftAction.triggered)
+            {
+                ChangeLane(-1);
+            }
+            else if (acceptInput && moveRightAction.triggered)
+            {
+                ChangeLane(1);
             }
 
             // Smooth sliding towards the target lane
@@ -152,7 +173,7 @@ public class PlayerControllerX : MonoBehaviour
             lateralSpeed = Time.deltaTime > 0f ? (currentPos.x - previousX) / Time.deltaTime : 0f;
 
             // Shoot Blaster 
-            if (shootAction.triggered)
+            if (acceptInput && shootAction.triggered)
             {
                 ShootBlaster();
             }
@@ -163,7 +184,7 @@ public class PlayerControllerX : MonoBehaviour
     void LateUpdate()
     {
         float dt = Time.deltaTime;
-        if (isGameOver || dt <= 0f)
+        if (isGameOver || scriptedMotion || dt <= 0f)
         {
             return;
         }
@@ -186,6 +207,103 @@ public class PlayerControllerX : MonoBehaviour
         yawVelocity = 0f;
     }
 
+    void ChangeLane(int direction)
+    {
+        int next = currentLane + direction;
+        if (next < 0 || next >= railsX.Length)
+        {
+            return;
+        }
+
+        int fromLane = currentLane;
+        currentLane = next;
+        PlaySessionLogger.Ensure().LogLaneChange(fromLane, currentLane);
+        AudioManager.PlayLaneShift();
+    }
+
+    /// <summary>
+    /// One finger on the phone. A sideways drag changes lane once. A press and release
+    /// that never crosses that drag is a single shot. The two never both happen.
+    /// </summary>
+    void HandleGameplayTouch()
+    {
+        Touchscreen screen = Touchscreen.current;
+        if (screen == null)
+        {
+            touchTracking = false;
+            return;
+        }
+
+        UnityEngine.InputSystem.Controls.TouchControl touch = screen.primaryTouch;
+        if (touch.press.wasPressedThisFrame)
+        {
+            Vector2 position = touch.position.ReadValue();
+            touchTracking = !TouchBlockedByUi(position);
+            touchDraggedLane = false;
+            touchOrigin = position;
+        }
+
+        if (!touchTracking)
+        {
+            return;
+        }
+
+        Vector2 now = touch.position.ReadValue();
+        Vector2 travel = now - touchOrigin;
+        float laneDistance = LaneSwipeDistance();
+        if (!touchDraggedLane && Mathf.Abs(travel.x) >= laneDistance && Mathf.Abs(travel.x) > Mathf.Abs(travel.y))
+        {
+            touchDraggedLane = true;
+            ChangeLane(travel.x < 0f ? -1 : 1);
+        }
+
+        if (touch.press.wasReleasedThisFrame)
+        {
+            touchTracking = false;
+            if (!touchDraggedLane)
+            {
+                ShootBlaster();
+            }
+        }
+    }
+
+    /// <summary>Above a normal tap wobble, below a long swipe. About 0.22 inch.</summary>
+    static float LaneSwipeDistance()
+    {
+        float fromDpi = Screen.dpi > 1f ? Screen.dpi * 0.22f : 64f;
+        float fromScreen = Mathf.Max(1f, Screen.width) * 0.07f;
+        return Mathf.Clamp(Mathf.Min(fromDpi, fromScreen), 36f, 110f);
+    }
+
+    bool TouchBlockedByUi(Vector2 screenPosition)
+    {
+        if (EventSystem.current == null)
+        {
+            return false;
+        }
+
+        uiHits.Clear();
+        PointerEventData data = new PointerEventData(EventSystem.current) { position = screenPosition };
+        EventSystem.current.RaycastAll(data, uiHits);
+        return uiHits.Count > 0;
+    }
+
+    /// <summary>Hangar threshold: input stops and the bunny slides back to the center rail.</summary>
+    public void LockControl()
+    {
+        ControlLocked = true;
+        currentLane = railsX.Length / 2;
+    }
+
+    /// <summary>Boarding cutscene. LevelFlowController moves the transform from here on.</summary>
+    public void BeginScriptedMotion()
+    {
+        LockControl();
+        scriptedMotion = true;
+        ResetBanking();
+        transform.rotation = startRotation;
+    }
+
     private void ShootBlaster()
     {
         if (laserPrefab != null && cannon != null)
@@ -193,6 +311,7 @@ public class PlayerControllerX : MonoBehaviour
             GameObject shot = Instantiate(laserPrefab, cannon.position, laserPrefab.transform.rotation);
             CurvedWorld.Apply(shot);
             PlaySessionLogger.Ensure().LogShotFired(currentLane);
+            RunStats.RecordShot();
             AudioManager.PlayShoot();
         }
     }
@@ -234,6 +353,7 @@ public class PlayerControllerX : MonoBehaviour
         collision.transform.SetParent(null, true);
         GameHUD.Ensure().ApplyCollisionPenalty();
         PlaySessionLogger.Ensure().LogCrash(currentLane, collision.gameObject.name);
+        RunStats.RecordCrash();
         AudioManager.PlayCrash();
         KnockAway(collision.gameObject);
         HoldPositionSteady();
@@ -247,6 +367,12 @@ public class PlayerControllerX : MonoBehaviour
     }
 
     public void EndRun()
+    {
+        EndRun(true);
+    }
+
+    /// <param name="showFinishPanel">False when the level-clear screen replaces the FINISHED panel.</param>
+    public void EndRun(bool showFinishPanel)
     {
         if (isGameOver)
         {
@@ -265,7 +391,7 @@ public class PlayerControllerX : MonoBehaviour
         moveRightAction?.Disable();
         shootAction?.Disable();
 
-        GameHUD.Ensure().ShowFinish();
+        GameHUD.Ensure().ShowFinish(showFinishPanel);
         PlaySessionLogger.Ensure().SaveSession();
         Debug.Log("Quiz finished. Final score: " + GameHUD.Ensure().score);
     }

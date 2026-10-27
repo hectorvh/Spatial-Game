@@ -47,6 +47,21 @@ public class PlaySessionLogger : MonoBehaviour
         Debug.Log("Play session started: " + sessionId);
     }
 
+    /// <summary>
+    /// Called when the run actually starts, so level-select and intro-video time is not
+    /// counted in startedAt or in each event's t.
+    /// </summary>
+    public void RestartClock()
+    {
+        if (events.Count > 0 || saved)
+        {
+            return;
+        }
+
+        sessionStartTime = Time.realtimeSinceStartup;
+        startedAt = DateTime.UtcNow.ToString("o");
+    }
+
     public void LogLaneChange(int fromLane, int toLane)
     {
         PlayEvent playEvent = CreateEvent("lane_change");

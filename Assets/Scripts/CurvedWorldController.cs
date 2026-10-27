@@ -19,6 +19,9 @@ public class CurvedWorldController : MonoBehaviour
 
     PlayerControllerX player;
     float swayTime;
+    float bendScale = 1f;
+    float bendTarget = 1f;
+    float bendRate;
 
     public static CurvedWorldController Ensure()
     {
@@ -57,7 +60,15 @@ public class CurvedWorldController : MonoBehaviour
             swayTime += Time.deltaTime;
         }
 
+        bendScale = Mathf.MoveTowards(bendScale, bendTarget, bendRate * Time.deltaTime);
         Push();
+    }
+
+    /// <summary>Eases the whole bend toward target (0 = flat, 1 = full) over the given seconds.</summary>
+    public void FadeBendTo(float target, float seconds)
+    {
+        bendTarget = Mathf.Clamp01(target);
+        bendRate = seconds > 0.01f ? Mathf.Abs(bendTarget - bendScale) / seconds : float.MaxValue;
     }
 
     void Push()
@@ -69,7 +80,8 @@ public class CurvedWorldController : MonoBehaviour
             turn = maxTurnStrength * Mathf.Sin(2f * Mathf.PI * swayTime / turnPeriod);
         }
 
-        CurvedWorld.SetGlobals(originZ, turn, horizonDrop);
+        float eased = Mathf.SmoothStep(0f, 1f, bendScale);
+        CurvedWorld.SetGlobals(originZ, turn * eased, horizonDrop * eased);
     }
 
     void OnDestroy()

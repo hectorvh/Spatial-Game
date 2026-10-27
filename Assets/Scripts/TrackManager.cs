@@ -18,6 +18,10 @@ public class TrackManager : MonoBehaviour
     [Header("Tile Scale")]
     public Vector3 tileScale = new Vector3(12f, 0.2f, 10f);
 
+    [Header("Level End")]
+    [Tooltip("Cleared by LevelFlowController when the hangar end tile is placed after the last tile.")]
+    public bool recycleTiles = true;
+
     class TrackSegment
     {
         public GameObject ground;
@@ -185,10 +189,78 @@ public class TrackManager : MonoBehaviour
             SyncRailZ(segment);
         }
 
-        while (segments.Count > 0 && GetSegmentZ(segments[0]) < -10.0f)
+        while (recycleTiles && segments.Count > 0 && GetSegmentZ(segments[0]) < -10.0f)
         {
             RelocateFrontToEnd();
         }
+    }
+
+    /// <summary>
+    /// Drops every tile past keepCount, counting from the back of the strip, and reports
+    /// the far edge of the last tile that stays. The hangar ending uses this so the bay
+    /// sits after the 5th tile instead of after all 10.
+    /// </summary>
+    public bool TrimToTileCount(int keepCount, out float endZ, out float surfaceY)
+    {
+        endZ = 0f;
+        surfaceY = 0f;
+        if (segments.Count == 0)
+        {
+            return false;
+        }
+
+        int keep = Mathf.Clamp(keepCount, 1, segments.Count);
+        for (int i = segments.Count - 1; i >= keep; i--)
+        {
+            DeactivateSegment(segments[i]);
+            segments.RemoveAt(i);
+        }
+
+        return TryGetTrackEnd(out endZ, out surfaceY);
+    }
+
+    static void DeactivateSegment(TrackSegment segment)
+    {
+        if (segment.ground != null)
+        {
+            segment.ground.SetActive(false);
+        }
+
+        for (int i = 0; i < segment.rails.Count; i++)
+        {
+            if (segment.rails[i] != null)
+            {
+                segment.rails[i].SetActive(false);
+            }
+        }
+    }
+
+    /// <summary>Far edge and top surface of the farthest ground tile, from its renderer bounds.</summary>
+    public bool TryGetTrackEnd(out float endZ, out float surfaceY)
+    {
+        endZ = float.MinValue;
+        surfaceY = 0f;
+        bool found = false;
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            GameObject ground = segments[i].ground;
+            Renderer groundRenderer = ground != null ? ground.GetComponentInChildren<Renderer>() : null;
+            if (groundRenderer == null)
+            {
+                continue;
+            }
+
+            Bounds bounds = groundRenderer.bounds;
+            if (bounds.max.z > endZ)
+            {
+                endZ = bounds.max.z;
+                surfaceY = bounds.max.y;
+                found = true;
+            }
+        }
+
+        return found;
     }
 
     void RelocateFrontToEnd()

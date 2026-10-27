@@ -2,7 +2,7 @@
 // Bend: d = max(0, z - _CurveOriginZ); x += _CurveStrengthX * d^2; y -= _CurveStrengthY * d^2.
 // Must stay in sync with CurvedWorld.Offset() (C#), which mirrors it for labels and effects.
 // Every pass applies the identical bend so depth prepass / shadows line up with the colour pass.
-Shader "SpatialPaws/CurvedWorldLit"
+Shader "AstroBunny/CurvedWorldLit"
 {
     Properties
     {

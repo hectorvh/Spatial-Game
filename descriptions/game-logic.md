@@ -1,6 +1,6 @@
-# Spatial Paws — Game Logic, Objects, and Characters
+# Astro Bunny — Game Logic, Objects, and Characters
 
-This document describes the **current playable version** of Spatial Paws (scene: `Assets/Scenes/Jerboa Runner.unity`). It is a 3-lane endless runner with a two-phase quiz: the player first intercepts a 3D spatial scene (hollow gray box + red sphere), then dodges solid answer panels and shoots the one that matches the revealed question.
+This document describes the **current playable version** of Astro Bunny (scene: `Assets/Scenes/Jerboa Runner.unity`). It is a 3-lane endless runner with a two-phase quiz: the player first intercepts a 3D spatial scene (hollow gray box + red sphere), then dodges solid answer panels and shoots the one that matches the revealed question.
 
 ---
 
@@ -137,7 +137,7 @@ Tiles keep the position, rotation, and scale from the Hierarchy. `TrackManager` 
 
 ### Curved world (visual only)
 
-Ground, rails, answer waves, the stimulus, crystal shots, and debris are drawn with `SpatialPaws/CurvedWorldLit` (`Assets/Resources/`). The shader bends vertices by distance ahead of the bunny (`d = z − bunnyZ`): down by `horizonDrop · d²` and sideways by a slowly swaying `turn · d²`. Physics does not bend: transforms, colliders, lanes, and triggers stay on the straight track, and nothing at the bunny's Z moves. `CurvedWorldController` sets the values each frame. `CurvedWorldFollower` keeps TMP answer labels on their bent boxes, and hit or pickup effects spawn at `CurvedWorld.Bend(position)`. The HUD Box-View is not bent.
+Ground, rails, answer waves, the stimulus, crystal shots, and debris are drawn with `AstroBunny/CurvedWorldLit` (`Assets/Resources/`). The shader bends vertices by distance ahead of the bunny (`d = z − bunnyZ`): down by `horizonDrop · d²` and sideways by a slowly swaying `turn · d²`. Physics does not bend: transforms, colliders, lanes, and triggers stay on the straight track, and nothing at the bunny's Z moves. `CurvedWorldController` sets the values each frame. `CurvedWorldFollower` keeps TMP answer labels on their bent boxes, and hit or pickup effects spawn at `CurvedWorld.Bend(position)`. The HUD Box-View is not bent.
 
 ### Ambient debris
 
@@ -282,7 +282,7 @@ Sample items ask where the red sphere is relative to the box (inside, on top, in
 
 `Application.persistentDataPath/session_logs/<sessionId>.json`
 
-(On Linux Editor this is typically under `~/.config/unity3d/DefaultCompany/Spatial Paws Game/session_logs/`.)
+(On Linux Editor this is typically under `~/.config/unity3d/DefaultCompany/Astro Bunny/session_logs/`.)
 
 The file is written when the quiz finishes, on collision (first save), and on quit (once).
 
@@ -345,7 +345,7 @@ Layer `UI_3D_Preview` is used only by the off-screen Box-View studio. The gamepl
 
 ## 10. Build notes
 
-Product name: **Spatial Paws Game**.  
+Product name: **Astro Bunny**.  
 Play scene: **Jerboa Runner**.  
 WebGL build profiles exist under `Assets/Settings/Build Profiles/`.  
 Quiz JSON must stay in `StreamingAssets` so it is copied into builds and can be edited without recompiling scripts.

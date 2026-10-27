@@ -1,6 +1,6 @@
-# Spatial Paws — Version 9 status
+# Astro Bunny — Version 9 status
 
-Compared against `spatial-paws-v9-spec.md` and the current Jerboa Runner scripts. This file records what is already in code, what was done differently on purpose, and what is still missing.
+Compared against `astro-bunny-v9-spec.md` and the current Jerboa Runner scripts. This file records what is already in code, what was done differently on purpose, and what is still missing.
 
 The playable loop is still the same: catch the Phase 1 stimulus, then shoot the answer wave. Nothing below removes that.
 
@@ -107,7 +107,7 @@ To change a sound, select `AudioLibrary.asset` and drop another clip into its sl
 
 The world looks like it drops over a horizon and sways left and right. Transforms and colliders do not move. Lanes, shots, triggers, and `TrackManager` recycling are unchanged.
 
-- `Assets/Resources/CurvedWorldLit.shader` (`SpatialPaws/CurvedWorldLit`): opaque URP lit shader with main-light shadows, SH ambient, Blinn specular, emission, and fog. ShadowCaster, DepthOnly, and DepthNormals passes apply the same bend, so shadows and the depth prepass line up with the color pass.
+- `Assets/Resources/CurvedWorldLit.shader` (`AstroBunny/CurvedWorldLit`): opaque URP lit shader with main-light shadows, SH ambient, Blinn specular, emission, and fog. ShadowCaster, DepthOnly, and DepthNormals passes apply the same bend, so shadows and the depth prepass line up with the color pass.
 - Bend, with `d = max(0, z − originZ)`: `x += kx · d²`, `y −= ky · d²`. Nothing behind the bunny bends, and nothing at the bunny's Z (d = 0) moves, which is where pickups and crashes happen.
 - `CurvedWorldController` sets the globals every frame:
   - `originZ` = bunny Z.

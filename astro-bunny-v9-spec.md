@@ -1,6 +1,6 @@
-# Spatial Paws — Version 9 Technical Specification & Roadmap
+# Astro Bunny — Version 9 Technical Specification & Roadmap
 
-This document outlines the software requirements, mathematical transforms, architectural changes, visual improvements, and narrative framework for **Version 9** of the Spatial Paws Runner (active scene: `Assets/Scenes/Jerboa Runner.unity`). Development is broken into phased iterations to ensure the playable loop remains testable at every stage.
+This document outlines the software requirements, mathematical transforms, architectural changes, visual improvements, and narrative framework for **Version 9** of the Astro Bunny Runner (active scene: `Assets/Scenes/Jerboa Runner.unity`). Development is broken into phased iterations to ensure the playable loop remains testable at every stage.
 
 ---
 

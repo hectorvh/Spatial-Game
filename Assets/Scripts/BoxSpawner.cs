@@ -77,6 +77,7 @@ public class BoxSpawner : MonoBehaviour
 
     IEnumerator Start()
     {
+        LevelFlowController.Ensure();
         GameModeSettings.CurrentMode = gameMode;
         playerScript = FindAnyObjectByType<PlayerControllerX>();
         if (playerScript != null && playerScript.railsX != null && playerScript.railsX.Length >= 3)
@@ -91,6 +92,8 @@ public class BoxSpawner : MonoBehaviour
             yield break;
         }
 
+        // Level select, intro video and the mode gate run first.
+        yield return new WaitUntil(() => LevelFlowController.RunStarted);
         yield return new WaitForSeconds(startDelay);
         yield return RunTrials();
     }
@@ -242,6 +245,7 @@ public class BoxSpawner : MonoBehaviour
             stimulusAttempt,
             reactionTimeMs
         );
+        RunStats.RecordStimulusReaction(reactionTimeMs);
 
         if (activeQuestion != null)
         {
@@ -336,6 +340,7 @@ public class BoxSpawner : MonoBehaviour
         }
 
         CurvedWorld.Apply(waveObject);
+        RunStats.RecordAnswerWave(question.id);
     }
 
     bool IsAnswerPhaseClear()
@@ -433,7 +438,17 @@ public class BoxSpawner : MonoBehaviour
     {
         yield return new WaitForSeconds(finishDelay);
 
-        if (playerScript != null && !playerScript.isGameOver)
+        if (playerScript == null || playerScript.isGameOver)
+        {
+            yield break;
+        }
+
+        LevelFlowController flow = LevelFlowController.Instance;
+        if (flow != null && flow.HandlesCorridorFinish)
+        {
+            flow.BeginCorridorFinish();
+        }
+        else
         {
             playerScript.EndRun();
         }

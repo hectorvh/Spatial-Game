@@ -14,6 +14,8 @@ public class AudioManager : MonoBehaviour
     const float MusicFadePerSecond = 0.8f;
 
     static AudioClip generatedLoop;
+    static float flowMusicScale = 1f;
+    static bool menuMode;
 
     AudioLibrary library;
     AudioSource[] sfxSources;
@@ -38,6 +40,37 @@ public class AudioManager : MonoBehaviour
     public static void PlayCrash() => Play(l => l.crash, 0.85f, 0.04f);
     public static void PlayStimulusCollect() => Play(l => l.stimulusCollect, 0.8f, 0f);
     public static void PlayLaneShift() => Play(l => l.laneShift, 0.35f, 0.08f);
+
+    /// <summary>Extra music ceiling set by LevelFlowController, for example 0 while a cutscene video plays.</summary>
+    public static void SetFlowMusicScale(float scale)
+    {
+        flowMusicScale = Mathf.Clamp01(scale);
+    }
+
+    /// <summary>Level select: swaps to menuMusic if assigned, otherwise plays the level music quietly.</summary>
+    public static void SetMenuMode(bool menu)
+    {
+        menuMode = menu;
+        AudioManager manager = Ensure();
+        if (manager.musicSource == null || manager.library == null)
+        {
+            return;
+        }
+
+        AudioClip wanted = manager.SelectMusicClip();
+        if (manager.musicSource.clip == wanted)
+        {
+            return;
+        }
+
+        manager.musicSource.Stop();
+        manager.musicSource.clip = wanted;
+        manager.musicSource.volume = 0f;
+        if (wanted != null)
+        {
+            manager.musicSource.Play();
+        }
+    }
 
     static void Play(Func<AudioLibrary, AudioClip> select, float volume, float pitchJitter)
     {
@@ -87,8 +120,13 @@ public class AudioManager : MonoBehaviour
         return source;
     }
 
-    void StartMusic()
+    AudioClip SelectMusicClip()
     {
+        if (menuMode && library.menuMusic != null)
+        {
+            return library.menuMusic;
+        }
+
         AudioClip clip = library.levelMusic;
         if (clip == null && library.useProceduralMusicFallback)
         {
@@ -100,6 +138,12 @@ public class AudioManager : MonoBehaviour
             clip = generatedLoop;
         }
 
+        return clip;
+    }
+
+    void StartMusic()
+    {
+        AudioClip clip = SelectMusicClip();
         if (clip == null)
         {
             return;
@@ -143,6 +187,12 @@ public class AudioManager : MonoBehaviour
         {
             scale = library.pausedMusicScale;
         }
+        else if (menuMode && library.menuMusic == null)
+        {
+            scale = library.menuMusicScale;
+        }
+
+        scale = Mathf.Min(scale, flowMusicScale);
 
         // Unscaled so the duck still happens while the pause menu has timeScale at 0.
         musicSource.volume = Mathf.MoveTowards(

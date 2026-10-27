@@ -23,5 +23,7 @@ public class AmbientDebrisItem : MonoBehaviour
     public float maxForwardSpeed = -1f;
     public float fadeIn;
     public bool fading;
+    public float fadeOut;
+    public bool fadingOut;
     public Renderer[] renderers;
 }
